@@ -11,7 +11,7 @@ Push2Type is a straightforward utility for real-time speech-to-text transcriptio
   Choose between various Whisper model variants (e.g., `base`, `small.en`) so you can adjust for speed or accuracy.
   
 - **Push-to-Talk Mode:**  
-  Control recording with a hotkey—press to record, release to transcribe.
+  Control recording with a hotkey—press to record, release to transcribe. (Hold Ctrl+Shift)
   
 - **Simple UI:**  
   A minimal, functional interface that keeps things clear and straightforward.
@@ -21,7 +21,7 @@ Push2Type is a straightforward utility for real-time speech-to-text transcriptio
 
 ## How It Works
 
-Push2Type listens to your mic when you press the push-to-talk hotkey. It captures the audio, processes it, and sends it through a Whisper model for transcription. The transcribed text is then injected into your target application via simulated clipboard paste action (no keystroke simulation).
+Push2Type listens to your mic when you hold the push-to-talk hotkey (Ctrl+Shift). It captures the audio, processes it, and sends it through a Whisper model for transcription upon release of the hotkey. The transcribed text is then injected into the currently active field of your target application via simulated clipboard paste action (no keystroke simulation).
 
 ## Getting Started
 

@@ -2,6 +2,10 @@
 
 Push2Type is a straightforward utility for real-time speech-to-text transcription. Built on OpenAI's Whisper and powered by a simple Tkinter GUI, it's designed for developers and PC power users who need reliable, live transcription without the fluff.
 
+![Push2Type Logo](media/Push2Type.png)
+
+![Push2Type Demo](media/demo.gif)
+
 ## What It Does
 
 - **Real-Time Transcription:**  

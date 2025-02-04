@@ -16,10 +16,10 @@ class TranscriptionApp(tk.Tk):
             stop_callback (Callable, optional): Callback for additional cleanup when stopping.
         """
         super().__init__(*args, **kwargs)
-        self.title("Real-Time Transcription Utility")
+        self.title("Push2Type")
         self.geometry(config.COMPACT_GEOMETRY)  # Fixed, compact geometry e.g., "400x60"
         self.wm_attributes("-topmost", config.ALWAYS_ON_TOP)  # Always on top
-        
+
         # Main container frame using horizontal layout.
         self.main_frame = tk.Frame(self)
         self.main_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)

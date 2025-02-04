@@ -60,7 +60,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='MyApp',
+    name='Push2Type',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -76,5 +76,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='MyApp'
+    name='Push2Type'
 )

@@ -1,49 +1,82 @@
-# Real-Time Speech-to-Text Transcription Utility (MVP)
+# Push2Type: Real-Time Speech-to-Text Transcription Utility
 
-## Overview
+Push2Type is a straightforward utility for real-time speech-to-text transcription. Built on OpenAI's Whisper and powered by a simple Tkinter GUI, it's designed for developers and PC power users who need reliable, live transcription without the fluff.
 
-This utility captures audio from a microphone, transcribes it using OpenAI's Whisper model, and displays the live transcription in a dedicated GUI. It is designed for Windows and uses Python with Tkinter for the GUI.
+## What It Does
 
-## File Structure
+- **Real-Time Transcription:**  
+  Capture your microphone input and convert speech to text on the fly.
+  
+- **Multiple Models:**  
+  Choose between various Whisper model variants (e.g., `base`, `small.en`) so you can adjust for speed or accuracy.
+  
+- **Push-to-Talk Mode:**  
+  Control recording with a hotkey—press to record, release to transcribe.
+  
+- **Simple UI:**  
+  A minimal, functional interface that keeps things clear and straightforward.
+  
+- **Easy Packaging:**  
+  Use PyInstaller to build a standalone executable if you need to distribute your own version.
 
-```
-/speech_to_text_app
-  ├── main.py
-  ├── audio_capture.py
-  ├── transcription.py
-  ├── gui.py
-  ├── config.py
-  ├── logger_setup.py
-  ├── requirements.txt
-  └── README.md
-```
+## How It Works
 
-## Setup Instructions
+Push2Type listens to your mic when you press the push-to-talk hotkey. It captures the audio, processes it, and sends it through a Whisper model for transcription. The transcribed text is then injected into your target application via simulated clipboard paste action (no keystroke simulation).
 
-1. **Create a virtual environment:**
-   ```
+## Getting Started
+
+### Requirements
+- **Python 3.8+**
+- **A working microphone**
+- **Optional:** A CUDA-compatible GPU for faster processing if desired (set in `config.py`). If CUDA is not found, the application will default to CPU.
+
+### Quick Setup on Windows
+
+1. **Create a Virtual Environment:**
+
+   In your project directory, run:
+   ```bash
    python -m venv venv
-   venv\Scripts\activate   # On Windows
+   venv\Scripts\activate
    ```
 
-2. **Install dependencies:**
-   ```
+2. **Install Dependencies:**
+
+   With your virtual environment activated, run:
+   ```bash
    pip install -r requirements.txt
    ```
 
-3. **Run the Application:**
-   ```
+3. **Configure:**
+
+   Open `config.py` to set your preferred model, hotkey, and other options.
+
+4. **Run Push2Type:**
+
+   Launch the application by running:
+   ```bash
    python main.py
    ```
+   The GUI will open immediately, and you can use your configured hotkey to start transcribing.
 
-4. **Packaging (Optional):**
-   Use PyInstaller to create a standalone executable:
+## Packaging Your Application
+
+If you want to build a standalone executable:
+
+1. **Build It:**
+   ```bash
+   python -m PyInstaller build.spec
    ```
-   pyinstaller --onefile main.py
-   ```
+   The packaged app will be available in the `dist/` directory.
 
-## Notes
+## Contributing
 
-- Adjust settings in `config.py` as necessary (e.g., energy threshold, model selection).
-- Logs are saved to `app.log` and displayed in the GUI.
-- For troubleshooting and future enhancements, review the inline documentation in each module. 
+Contributions, bug reports, and suggestions are welcome. If you have ideas for improvements or fixes, feel free to fork the repository and submit a pull request. I am all about keeping it simple and useful.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+Thanks for checking out Push2Type. If you're a developer or power user looking for a reliable, real-time speech-to-text tool without the hype, give it a try! 

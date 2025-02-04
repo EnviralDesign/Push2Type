@@ -15,7 +15,7 @@ Push2Type is a straightforward utility for **LOCAL** speech-to-text transcriptio
   Choose between various Whisper model variants (e.g., `base`, `small.en`) so you can adjust for speed or accuracy.
   
 - **Push-to-Talk Mode:**  
-  Control recording with a hotkey—press to record, release to transcribe. (Hold Ctrl+Shift)
+  Control recording with a hotkey—press to record, release to transcribe. (Hold `Ctrl+Shift`)
   
 - **Simple UI:**  
   A minimal, functional interface that keeps things clear and straightforward.
@@ -25,11 +25,12 @@ Push2Type is a straightforward utility for **LOCAL** speech-to-text transcriptio
 
 ## How It Works
 
-Push2Type listens to your mic when you hold the push-to-talk hotkey (Ctrl+Shift). It captures the audio, processes it, and sends it through a Whisper model for transcription upon release of the hotkey. The transcribed text is then injected into the currently active field of your target application via simulated clipboard paste action (no keystroke simulation).
+Push2Type listens to your mic when you hold the push-to-talk hotkey (`Ctrl+Shift`). It captures the audio, processes it, and sends it through a Whisper model for transcription upon release of the hotkey. The transcribed text is then injected into the currently active field of your target application via simulated clipboard paste action (no keystroke simulation).
 
 ## Getting Started
 
 ### Requirements
+
 - **Python 3.8+ (Developed and tested with Python 3.13)**
 - **A working microphone**
 - **Optional:** A CUDA-compatible GPU for faster processing if desired (set in `config.py`). If CUDA is not found, the application will default to CPU.
@@ -61,7 +62,8 @@ Push2Type listens to your mic when you hold the push-to-talk hotkey (Ctrl+Shift)
    ```bash
    python main.py
    ```
-   The GUI will open immediately, and you can use your configured hotkey to start transcribing.
+   The GUI will open immediately, and you can use your configured hotkey( `Ctrl+Shift` ) to start transcribing.
+
 
 ## Packaging Your Application
 

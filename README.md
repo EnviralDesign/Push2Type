@@ -30,7 +30,7 @@ Push2Type listens to your mic when you hold the push-to-talk hotkey (Ctrl+Shift)
 ## Getting Started
 
 ### Requirements
-- **Python 3.8+**
+- **Python 3.8+ (Developed and tested with Python 3.13)**
 - **A working microphone**
 - **Optional:** A CUDA-compatible GPU for faster processing if desired (set in `config.py`). If CUDA is not found, the application will default to CPU.
 

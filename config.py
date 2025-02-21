@@ -1,23 +1,32 @@
-# Configuration parameters for the Real-Time Speech-to-Text Transcription Utility
+"""
+Configuration parameters for the Real-Time Speech-to-Text Transcription Utility.
+This module loads configuration from the user config file if available.
+"""
 
-ENERGY_THRESHOLD = 1000  # Adjust this depending on ambient noise levels
-RECORD_TIMEOUT = 2.0     # Maximum duration (in seconds) for each recorded phrase
-PHRASE_TIMEOUT = 3.0     # Duration (in seconds) to wait for phrase completion
+from user_config import load_user_config
+
+# Load user configuration
+user_config = load_user_config()
+
+# Audio processing configuration
+ENERGY_THRESHOLD = user_config["energy_threshold"]
+RECORD_TIMEOUT = user_config["record_timeout"]
+PHRASE_TIMEOUT = user_config["phrase_timeout"]
 
 # Geometry and display configuration for the compact UI.
 COMPACT_GEOMETRY = "400x60"  # A small, narrow widget
-ALWAYS_ON_TOP = True
+ALWAYS_ON_TOP = user_config["always_on_top"]
 
 # Model settings
-DEFAULT_MODEL = "base"
-USE_GPU = True
+DEFAULT_MODEL = user_config["model"]
+USE_GPU = user_config["use_gpu"]
 
 # Recording configuration
 # Delay in milliseconds added after hotkey release before stopping audio capture.
-RECORDING_BUFFER_MS = 150
+RECORDING_BUFFER_MS = user_config["recording_buffer_ms"]
 
 # Push-to-Talk Configuration
-HOTKEY = "ctrl+shift"  # Updated hotkey combination for push-to-talk
+HOTKEY = user_config["hotkey"]
 MINIMAL_GEOMETRY = "400x200"   # Contracted mode
 EXPANDED_GEOMETRY = "600x200"   # Expanded mode (wider, same height)
 

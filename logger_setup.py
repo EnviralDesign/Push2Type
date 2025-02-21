@@ -1,4 +1,5 @@
 import logging
+import os
 
 class GuiLogHandler(logging.Handler):
     def __init__(self, gui_callback):
@@ -18,6 +19,7 @@ class GuiLogHandler(logging.Handler):
 def setup_logger(gui_callback=None) -> logging.Logger:
     """
     Configures and returns a logger that outputs to a file, console, and optionally a GUI.
+    The log file is cleared on startup.
     
     Args:
         gui_callback (Callable, optional): Callback function for GUI log output.
@@ -25,12 +27,18 @@ def setup_logger(gui_callback=None) -> logging.Logger:
     Returns:
         logging.Logger: The configured logger instance.
     """
+    # Clear the log file if it exists
+    log_file = "app.log"
+    if os.path.exists(log_file):
+        with open(log_file, 'w') as f:
+            f.truncate(0)
+    
     logger = logging.getLogger("SpeechToText")
     logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
     
     # File Handler
-    fh = logging.FileHandler("app.log")
+    fh = logging.FileHandler(log_file)
     fh.setLevel(logging.DEBUG)
     fh.setFormatter(formatter)
     logger.addHandler(fh)

@@ -2,8 +2,12 @@
 Configuration parameters for the Real-Time Speech-to-Text Transcription Utility.
 This module loads configuration from the user config file if available.
 """
-
+import os
+from dotenv import load_dotenv
 from user_config import load_user_config
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Load user configuration
 user_config = load_user_config()
@@ -20,6 +24,14 @@ ALWAYS_ON_TOP = user_config["always_on_top"]
 # Model settings
 DEFAULT_MODEL = user_config["model"]
 USE_GPU = user_config["use_gpu"]
+
+# Cloud STT settings
+USE_CLOUD_STT = user_config["use_cloud_stt"]
+CLOUD_PROVIDER = user_config["cloud_provider"]
+CLOUD_MODEL = user_config["cloud_model"]
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", user_config.get("openai_api_key", ""))
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", user_config.get("openai_base_url", "https://api.openai.com/v1"))
+
 
 # Recording configuration
 # Delay in milliseconds added after hotkey release before stopping audio capture.

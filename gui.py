@@ -1,127 +1,146 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 import config
 import threading
 
 class TranscriptionApp(tk.Tk):
-    def __init__(self, update_transcription_callback=None, update_log_callback=None,
-                 model_change_callback=None, stop_callback=None, *args, **kwargs):
-        """
-        Initializes the Tkinter-based GUI for live transcription and logging.
-        
-        Args:
-            update_transcription_callback (Callable, optional): External callback for transcription updates.
-            update_log_callback (Callable, optional): External callback for logging messages.
-            model_change_callback (Callable, optional): Callback function to handle model change.
-            stop_callback (Callable, optional): Callback for additional cleanup when stopping.
-        """
+    def __init__(self, model_change_callback=None, save_config_callback=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.title("Push2Type")
-        self.geometry(config.COMPACT_GEOMETRY)  # Fixed, compact geometry e.g., "400x60"
-        self.wm_attributes("-topmost", config.ALWAYS_ON_TOP)  # Always on top
+        self.geometry("400x80") # Adjusted geometry
+        self.wm_attributes("-topmost", config.ALWAYS_ON_TOP)
 
-        # Main container frame using horizontal layout.
-        self.main_frame = tk.Frame(self)
-        self.main_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        
-        # Configuration Frame (left side) for model dropdown and GPU checkbox.
-        self.config_frame = tk.Frame(self.main_frame)
-        self.config_frame.pack(side=tk.LEFT, padx=5)
-        
-        # Model Selector Dropdown
-        self.model_var = tk.StringVar(self)
-        self.model_var.set(config.DEFAULT_MODEL)
-        self.model_options = ["tiny", "tiny.en", "base", "base.en", "small", 
-                              "small.en", "medium", "medium.en", "large", "turbo"]
-        self.model_dropdown = ttk.Combobox(self.config_frame, textvariable=self.model_var, 
-                                           values=self.model_options, width=10)
-        self.model_dropdown.pack(side=tk.LEFT, padx=5)
-        self.model_dropdown.bind("<<ComboboxSelected>>", self.on_model_change)
-        
-        # GPU Checkbox
-        self.gpu_var = tk.BooleanVar(value=True)
-        self.gpu_checkbox = tk.Checkbutton(self.config_frame, text="GPU", 
-                                           variable=self.gpu_var, command=self.on_gpu_toggle)
-        self.gpu_checkbox.pack(side=tk.LEFT, padx=5)
-        
-        # Status Frame (right side) for displaying the current state.
-        self.status_frame = tk.Frame(self.main_frame)
-        self.status_frame.pack(side=tk.RIGHT, padx=5)
-        # The status label is given a fixed width and right anchor so its size stays constant.
-        self.status_label = tk.Label(self.status_frame, text="Idle", font=("Helvetica", 14),
-                                     width=20, anchor="e")
-        self.status_label.pack(side=tk.RIGHT, padx=5)
-        
-        # Callback functions for external events.
-        self.update_transcription_callback = update_transcription_callback
-        self.update_log_callback = update_log_callback
         self.model_change_callback = model_change_callback
-        self.stop_callback = stop_callback
+        self.save_config_callback = save_config_callback
+
+        # --- Main UI Frame ---
+        self.main_frame = tk.Frame(self)
+        self.main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        self.main_frame.grid_columnconfigure(1, weight=1)
+        self.main_frame.grid_columnconfigure(3, weight=1)
+
+        # --- Mode Dropdown ---
+        self.mode_label = tk.Label(self.main_frame, text="Mode:")
+        self.mode_label.grid(row=0, column=0, padx=(0, 5))
+        self.mode_var = tk.StringVar(self)
+        self.mode_options = ["GPU", "CPU", "Cloud"]
+        self.mode_dropdown = ttk.Combobox(self.main_frame, textvariable=self.mode_var, 
+                                          values=self.mode_options, width=10)
+        self.mode_dropdown.grid(row=0, column=1, sticky="ew")
+        self.mode_dropdown.bind("<<ComboboxSelected>>", self.on_mode_or_model_change)
+
+        # --- Model Dropdown ---
+        self.model_label = tk.Label(self.main_frame, text="Model:")
+        self.model_label.grid(row=0, column=2, padx=(10, 5))
+        self.model_var = tk.StringVar(self)
         
-        # State variable.
-        self.push_to_talk_active = False
+        self.local_model_options = ["tiny", "tiny.en", "base", "base.en", "small", "small.en", "medium", "medium.en", "large"]
+        self.cloud_model_options = ["whisper-1", "gpt-4o-transcribe"]
         
-        # Variables for spinner animation.
+        self.model_dropdown = ttk.Combobox(self.main_frame, textvariable=self.model_var, width=10)
+        self.model_dropdown.grid(row=0, column=3, sticky="ew")
+        self.model_dropdown.bind("<<ComboboxSelected>>", self.on_mode_or_model_change)
+
+        # --- Status Label ---
+
+        # --- Status Label ---
+        self.status_label = tk.Label(self.main_frame, text="Idle", font=("Helvetica", 12), anchor="e")
+        self.status_label.grid(row=1, column=0, columnspan=4, sticky="nsew", pady=(10, 0))
+
+        self.set_initial_state()
+
         self.spinner_running = False
-        self.spinner_chars = ["|", "/", "-", "\\"]
+        self.spinner_chars = ['v', '<', '^', '>']
         self.current_spinner_index = 0
 
-    def on_gpu_toggle(self):
-        # Indicate loading on UI.
-        self.status_label.config(text="Loading...")
-        self.update()
+    def set_initial_state(self):
+        """Sets the initial state of the dropdowns based on config."""
+        if config.USE_CLOUD_STT:
+            self.mode_var.set("Cloud")
+            self.model_dropdown['values'] = self.cloud_model_options
+            self.model_var.set("gpt-4o-transcribe") # Default for Cloud
+        elif config.USE_GPU:
+            self.mode_var.set("GPU")
+            self.model_dropdown['values'] = self.local_model_options
+            self.model_var.set("small") # Default for GPU
+        else:
+            self.mode_var.set("CPU")
+            self.model_dropdown['values'] = self.local_model_options
+            self.model_var.set("small") # Default for CPU
+
+    def on_mode_or_model_change(self, event):
+        """Handles changes in mode or model selection."""
+        mode = self.mode_var.get()
+        current_model = self.model_var.get()
+
+        # Update model dropdown options based on mode
+        if mode == "Cloud":
+            new_model_options = self.cloud_model_options
+        else: # CPU or GPU
+            new_model_options = self.local_model_options
+        self.model_dropdown['values'] = new_model_options
+
+        # If the current model isn't in the new list, select the new default
+        if current_model not in new_model_options:
+            if mode == 'Cloud':
+                self.model_var.set('gpt-4o-transcribe')
+            else: # CPU or GPU
+                self.model_var.set('small')
+        
+        model = self.model_var.get()
+
+        if mode == "Cloud" and not config.OPENAI_API_KEY:
+            messagebox.showwarning("API Key Missing", 
+                                     "OpenAI API key is not configured. Please set it in the config file.")
+            self.set_initial_state() # Revert to previous state
+            return
+
+        if self.save_config_callback:
+            new_config = {"mode": mode, "model": model}
+            self.save_config_callback(new_config)
+        
+        self.reload_model()
+
+    def reload_model(self):
+        """Triggers the model reload in the main thread."""
+        self.set_status("Loading...")
         if self.model_change_callback:
-            # Spawn a thread that calls the model_change_callback and updates the status when done.
-            def load_model_and_update():
-                self.model_change_callback(self.model_var.get())
-                self.after(0, lambda: self.status_label.config(text="Idle"))
-            threading.Thread(target=load_model_and_update, daemon=True).start()
-            
-    def on_model_change(self, event):
-        # Indicate loading on UI before triggering the reload.
-        self.status_label.config(text="Loading...")
-        self.update()
-        if self.model_change_callback:
-            def load_model_and_update():
-                self.model_change_callback(self.model_var.get())
-                self.after(0, lambda: self.status_label.config(text="Idle"))
-            threading.Thread(target=load_model_and_update, daemon=True).start()
-    
+            mode = self.mode_var.get()
+            model = self.model_var.get()
+            threading.Thread(target=self.model_change_callback, args=(mode, model), daemon=True).start()
+
+    def set_status(self, text):
+        """Updates the status label from any thread."""
+        def update():
+            self.status_label.config(text=text)
+            self.update_idletasks()
+        self.after(0, update)
+
     def expand_ui(self):
-        # In the compact UI, "expanding" changes the status and starts spinner.
-        self.status_label.config(text="Listening...")
+        self.set_status("Listening...")
         self.start_spinner()
-        self.update()
 
     def contract_ui(self):
-        # Stop spinner and revert status.
         self.stop_spinner()
-        self.status_label.config(text="Idle")
-        self.update()
-    
+        mode = self.mode_var.get()
+        if mode == "Cloud":
+            self.set_status("Transcribing (Cloud)...")
+        else:
+            self.set_status("Transcribing (Local)...")
+
     def start_spinner(self):
         self.spinner_running = True
         self.update_spinner()
-    
+
     def stop_spinner(self):
         self.spinner_running = False
-    
+
     def update_spinner(self):
         if self.spinner_running:
             spinner_char = self.spinner_chars[self.current_spinner_index]
             self.current_spinner_index = (self.current_spinner_index + 1) % len(self.spinner_chars)
-            # Combine fixed "Listening..." text with spinner animation.
-            self.status_label.config(text=f"Listening... {spinner_char}")
+            self.set_status(f"Listening... {spinner_char}")
             self.after(200, self.update_spinner)
-    
-    def update_transcription(self, text: str) -> None:
-        # Briefly display the final transcription result then revert to Idle.
-        self.status_label.config(text=text)
-        self.after(3000, lambda: self.status_label.config(text="Idle"))
-    
-    def update_log(self, log_message: str) -> None:
-        # No log area in the compact UI.
-        pass
-    
+
     def start_app(self) -> None:
-        self.mainloop() 
+        self.mainloop()

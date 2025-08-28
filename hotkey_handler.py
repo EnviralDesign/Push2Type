@@ -1,32 +1,53 @@
-from global_hotkeys import register_hotkeys, start_checking_hotkeys, clear_hotkeys
+import logging
+from global_hotkeys import register_hotkeys, start_checking_hotkeys, stop_checking_hotkeys, clear_hotkeys
+import threading
 
-def register_push_to_talk_hotkey(on_activate_callback, on_deactivate_callback, hotkey_combination=None):
-    """
-    Registers a push-to-talk hotkey using the global-hotkeys library.
-    
-    Args:
-        on_activate_callback: Function to call when the hotkey is pressed.
-        on_deactivate_callback: Function to call when the hotkey is released.
-        hotkey_combination (str, optional): Hotkey combination string. If None, uses config.HOTKEY.
-    """
-    # Import configuration for fallback hotkey
-    from config import HOTKEY
-    if hotkey_combination is None:
-        hotkey_combination = HOTKEY
+logger = logging.getLogger("SpeechToText")
 
-    # Ensure the hotkey is in the correct format: replacing 'ctrl' with 'control'
-    binding_str = hotkey_combination.replace("ctrl", "control")
-    print("Registering push-to-talk hotkey with binding:", binding_str)
-    
-    # Create a binding dictionary for the global-hotkeys library.
-    binding = {
-        "hotkey": binding_str,
-        "on_press_callback": on_activate_callback,
-        "on_release_callback": on_deactivate_callback,
-        "actuate_on_partial_release": False,
-    }
-    
-    # Register the binding and start the hotkey listener.
-    register_hotkeys([binding])
-    start_checking_hotkeys()
-    print("Global hotkey listener started.") 
+class HotkeyHandler:
+    def __init__(self, on_press, on_release, hotkey_str):
+        self.on_press = on_press
+        self.on_release = on_release
+        self.hotkey_str = hotkey_str
+        self._is_running = False
+
+    def start(self):
+        """Registers the hotkey and starts the listener in a separate thread."""
+        if self._is_running:
+            logger.warning("Hotkey handler is already running.")
+            return
+
+        binding_str = self.hotkey_str.replace("ctrl", "control")
+        logger.info(f"Registering hotkey: {binding_str}")
+
+        bindings = [
+            {
+                "hotkey": binding_str,
+                "on_press_callback": self.on_press,
+                "on_release_callback": self.on_release,
+                "actuate_on_partial_release": False,
+            }
+        ]
+        
+        try:
+            register_hotkeys(bindings)
+            self._is_running = True
+            # The start_checking_hotkeys function blocks, so it needs its own thread.
+            self.listener_thread = threading.Thread(target=start_checking_hotkeys, daemon=True)
+            self.listener_thread.start()
+            logger.info("Hotkey listener started.")
+        except Exception as e:
+            logger.error(f"Failed to register or start hotkey listener: {e}")
+
+    def stop(self):
+        """Stops the hotkey listener and unregisters the hotkeys."""
+        if not self._is_running:
+            return
+            
+        try:
+            stop_checking_hotkeys()
+            clear_hotkeys()
+            self._is_running = False
+            logger.info("Hotkey listener stopped and hotkeys cleared.")
+        except Exception as e:
+            logger.error(f"Error while stopping hotkey listener: {e}")

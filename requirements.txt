@@ -12,4 +12,6 @@ pynput
 global-hotkeys
 packaging
 pyinstaller
-git+https://github.com/openai/whisper.git 
+git+https://github.com/openai/whisper.git
+openai
+python-dotenv

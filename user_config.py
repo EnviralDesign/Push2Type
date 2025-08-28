@@ -14,7 +14,12 @@ DEFAULT_CONFIG = {
     "energy_threshold": 1000,
     "record_timeout": 2.0,
     "phrase_timeout": 3.0,
-    "recording_buffer_ms": 150
+    "recording_buffer_ms": 150,
+    "use_cloud_stt": False,
+    "cloud_provider": "OpenAI",
+    "cloud_model": "gpt-4o-transcribe",
+    "openai_api_key": "",
+    "openai_base_url": "https://api.openai.com/v1"
 }
 
 def get_config_path() -> str:

@@ -1,3 +1,5 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 mod app;
 mod audio;
 mod config;
@@ -42,11 +44,15 @@ fn main() -> anyhow::Result<()> {
     );
     server::spawn_server(shared_config.clone(), ui_event_tx.clone(), tts_tx.clone());
 
+    let mut viewport = egui::ViewportBuilder::default()
+        .with_inner_size([480.0, 280.0])
+        .with_min_inner_size([420.0, 240.0])
+        .with_always_on_top();
+    if let Some(icon) = load_window_icon() {
+        viewport = viewport.with_icon(icon);
+    }
     let native_options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default()
-            .with_inner_size([480.0, 280.0])
-            .with_min_inner_size([420.0, 240.0])
-            .with_always_on_top(),
+        viewport,
         ..Default::default()
     };
 
@@ -66,4 +72,15 @@ fn main() -> anyhow::Result<()> {
     .map_err(|e| anyhow::anyhow!("eframe run failed: {e}"))?;
 
     Ok(())
+}
+
+fn load_window_icon() -> Option<egui::IconData> {
+    let bytes = include_bytes!("../assets/app.png");
+    let image = image::load_from_memory(bytes).ok()?.to_rgba8();
+    let (width, height) = image.dimensions();
+    Some(egui::IconData {
+        rgba: image.into_raw(),
+        width,
+        height,
+    })
 }

@@ -67,8 +67,8 @@ Constraints:
 
 ## Required Voice Behavior
 
-- Any time the agent sends a substantive user update in text, it should also send a voice update.
-- Voice update should be a natural-language counterpart, not a verbatim copy.
+- Any time the agent sends a text response to the user, it must also send a voice update.
+- Voice update must be a natural-language counterpart, not a verbatim copy.
 - Keep voice concise and low-jargon to reduce cost and improve clarity.
 - If text update is very long, summarize to 1-2 short spoken sentences.
 
@@ -88,8 +88,8 @@ Example 3:
 
 ## Recommended Usage Cadence
 
-Use voice updates at meaningful checkpoints:
-- work started
-- blocker/risk discovered
-- major step completed
-- final completion summary
+Use voice updates for every assistant response:
+- quick acknowledgements
+- progress updates
+- questions to the user
+- final completion summaries

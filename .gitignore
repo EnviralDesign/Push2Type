@@ -1,7 +1,8 @@
+/target
+/rust/
+/.env
+/.env.local
+/app.log
 /__pycache__
 /build
 /dist
-app.log
-push2type_config.json
-rust/push2type-rs/target
-rust/push2type-rs/.env

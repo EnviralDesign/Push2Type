@@ -1,0 +1,25 @@
+[package]
+name = "push2type-rs"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0"
+arboard = "3.4"
+base64 = "0.22"
+cpal = "0.16"
+crossbeam-channel = "0.5"
+dirs = "6.0"
+dotenvy = "0.15"
+eframe = { version = "0.31", default-features = true }
+egui = "0.31"
+enigo = "0.2"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "multipart", "rustls-tls"] }
+rdev = "0.5"
+rodio = "0.20"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tiny_http = "0.12"
+tungstenite = { version = "0.24", features = ["rustls-tls-native-roots"] }
+url = "2.5"
+hound = "3.5"

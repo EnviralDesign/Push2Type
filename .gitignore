@@ -3,3 +3,5 @@
 /dist
 app.log
 push2type_config.json
+rust/push2type-rs/target
+rust/push2type-rs/.env

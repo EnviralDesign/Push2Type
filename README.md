@@ -1,5 +1,15 @@
 # Push2Type: Real-Time Speech-to-Text Transcription Utility
 
+## Rust Rebuild (Preview)
+
+A full Rust rebuild now lives in `rust/push2type-rs` while the Python implementation remains intact as legacy reference.  
+The Rust app adds a local AI voice bridge endpoint:
+- `POST /speak` on `127.0.0.1:7821` for spoken agent updates
+- persona-to-voice mapping support
+- xAI voice first with OpenAI fallback
+
+See `rust/push2type-rs/README.md` for setup and endpoint schema.
+
 Push2Type is a straightforward utility for both **LOCAL** and **CLOUD** speech-to-text transcription. Built on OpenAI's Whisper models and a simple Tkinter GUI, it's designed for developers and power users who need reliable, live transcription with flexible processing options.
 
 ## What It Does

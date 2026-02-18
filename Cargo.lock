@@ -3081,6 +3081,7 @@ dependencies = [
  "tiny_http",
  "tungstenite",
  "url",
+ "windows-sys 0.59.0",
  "winresource",
 ]
 

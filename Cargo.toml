@@ -28,3 +28,6 @@ hound = "3.5"
 
 [build-dependencies]
 winresource = "0.1"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = ["Win32_UI_Input_KeyboardAndMouse"] }

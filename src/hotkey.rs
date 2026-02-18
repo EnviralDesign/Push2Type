@@ -1,11 +1,19 @@
 use std::{
-    collections::HashSet,
     sync::{Arc, Mutex},
     thread,
 };
+#[cfg(not(target_os = "windows"))]
+use std::collections::HashSet;
 
 use crossbeam_channel::Sender;
-use rdev::{EventType, Key, listen};
+#[cfg(not(target_os = "windows"))]
+use rdev::{EventType, listen};
+use rdev::Key;
+#[cfg(target_os = "windows")]
+use windows_sys::Win32::UI::Input::KeyboardAndMouse::{
+    GetAsyncKeyState, VK_LCONTROL, VK_LMENU, VK_LSHIFT, VK_LWIN, VK_RETURN, VK_RCONTROL,
+    VK_RMENU, VK_RSHIFT, VK_RWIN, VK_SPACE,
+};
 
 use crate::{app::AppEvent, audio::AudioRecorder, config::AppConfig};
 
@@ -19,6 +27,7 @@ struct HotkeySpec {
 }
 
 #[derive(Default)]
+#[cfg(not(target_os = "windows"))]
 struct KeyState {
     ctrl: bool,
     shift: bool,
@@ -55,6 +64,13 @@ pub fn spawn_hotkey_worker(
         });
         let _ = events.send(AppEvent::Info(format!("hotkey active: {}", hotkey_str)));
 
+        #[cfg(target_os = "windows")]
+        {
+            run_windows_hotkey_loop(spec, events, recorder, stt_tx);
+        }
+
+        #[cfg(not(target_os = "windows"))]
+        {
         let state = Arc::new(Mutex::new(KeyState::default()));
         let active = Arc::new(Mutex::new(false));
         let cb_events = events.clone();
@@ -92,7 +108,38 @@ pub fn spawn_hotkey_worker(
         if let Err(e) = result {
             let _ = events.send(AppEvent::Error(format!("hotkey listener failed: {e:?}")));
         }
+        }
     });
+}
+
+#[cfg(target_os = "windows")]
+fn run_windows_hotkey_loop(
+    spec: HotkeySpec,
+    events: Sender<AppEvent>,
+    recorder: Arc<AudioRecorder>,
+    stt_tx: Sender<Vec<i16>>,
+) {
+    let _ = events.send(AppEvent::Info(
+        "hotkey backend: windows key-state polling".to_string(),
+    ));
+    let mut was_active = false;
+
+    loop {
+        let now_active = is_hotkey_active_windows(&spec);
+        if !was_active && now_active {
+            recorder.start_capture();
+            let _ = events.send(AppEvent::Listening(true));
+            was_active = true;
+        } else if was_active && !now_active {
+            let audio = recorder.stop_capture();
+            let _ = events.send(AppEvent::Listening(false));
+            if !audio.is_empty() {
+                let _ = stt_tx.send(audio);
+            }
+            was_active = false;
+        }
+        thread::sleep(std::time::Duration::from_millis(12));
+    }
 }
 
 fn parse_hotkey_spec(input: &str) -> Option<HotkeySpec> {
@@ -171,6 +218,7 @@ fn map_alpha_numeric(c: char) -> Option<Key> {
     }
 }
 
+#[cfg(not(target_os = "windows"))]
 fn update_key_state(state: &mut KeyState, event: &EventType) {
     match event {
         EventType::KeyPress(key) => {
@@ -189,6 +237,7 @@ fn update_key_state(state: &mut KeyState, event: &EventType) {
     }
 }
 
+#[cfg(not(target_os = "windows"))]
 fn set_modifier_state(state: &mut KeyState, key: Key, pressed: bool) {
     match key {
         Key::ControlLeft | Key::ControlRight => state.ctrl = pressed,
@@ -199,6 +248,7 @@ fn set_modifier_state(state: &mut KeyState, key: Key, pressed: bool) {
     }
 }
 
+#[cfg(not(target_os = "windows"))]
 fn is_modifier_key(key: Key) -> bool {
     matches!(
         key,
@@ -213,6 +263,7 @@ fn is_modifier_key(key: Key) -> bool {
     )
 }
 
+#[cfg(not(target_os = "windows"))]
 fn is_hotkey_active(state: &KeyState, spec: &HotkeySpec) -> bool {
     if spec.require_ctrl && !state.ctrl {
         return false;
@@ -230,4 +281,78 @@ fn is_hotkey_active(state: &KeyState, spec: &HotkeySpec) -> bool {
         return state.pressed_non_mod.contains(&key);
     }
     true
+}
+
+#[cfg(target_os = "windows")]
+fn is_hotkey_active_windows(spec: &HotkeySpec) -> bool {
+    if spec.require_ctrl && !(is_vk_down(VK_LCONTROL as i32) || is_vk_down(VK_RCONTROL as i32)) {
+        return false;
+    }
+    if spec.require_shift && !(is_vk_down(VK_LSHIFT as i32) || is_vk_down(VK_RSHIFT as i32)) {
+        return false;
+    }
+    if spec.require_alt && !(is_vk_down(VK_LMENU as i32) || is_vk_down(VK_RMENU as i32)) {
+        return false;
+    }
+    if spec.require_meta && !(is_vk_down(VK_LWIN as i32) || is_vk_down(VK_RWIN as i32)) {
+        return false;
+    }
+    if let Some(key) = spec.key {
+        if let Some(vk) = key_to_vk(key) {
+            return is_vk_down(vk);
+        }
+        return false;
+    }
+    true
+}
+
+#[cfg(target_os = "windows")]
+fn is_vk_down(vk: i32) -> bool {
+    // High-order bit indicates key-down state.
+    unsafe { (GetAsyncKeyState(vk) as u16 & 0x8000) != 0 }
+}
+
+#[cfg(target_os = "windows")]
+fn key_to_vk(key: Key) -> Option<i32> {
+    match key {
+        Key::Space => Some(VK_SPACE as i32),
+        Key::Return => Some(VK_RETURN as i32),
+        Key::KeyA => Some('A' as i32),
+        Key::KeyB => Some('B' as i32),
+        Key::KeyC => Some('C' as i32),
+        Key::KeyD => Some('D' as i32),
+        Key::KeyE => Some('E' as i32),
+        Key::KeyF => Some('F' as i32),
+        Key::KeyG => Some('G' as i32),
+        Key::KeyH => Some('H' as i32),
+        Key::KeyI => Some('I' as i32),
+        Key::KeyJ => Some('J' as i32),
+        Key::KeyK => Some('K' as i32),
+        Key::KeyL => Some('L' as i32),
+        Key::KeyM => Some('M' as i32),
+        Key::KeyN => Some('N' as i32),
+        Key::KeyO => Some('O' as i32),
+        Key::KeyP => Some('P' as i32),
+        Key::KeyQ => Some('Q' as i32),
+        Key::KeyR => Some('R' as i32),
+        Key::KeyS => Some('S' as i32),
+        Key::KeyT => Some('T' as i32),
+        Key::KeyU => Some('U' as i32),
+        Key::KeyV => Some('V' as i32),
+        Key::KeyW => Some('W' as i32),
+        Key::KeyX => Some('X' as i32),
+        Key::KeyY => Some('Y' as i32),
+        Key::KeyZ => Some('Z' as i32),
+        Key::Num0 => Some('0' as i32),
+        Key::Num1 => Some('1' as i32),
+        Key::Num2 => Some('2' as i32),
+        Key::Num3 => Some('3' as i32),
+        Key::Num4 => Some('4' as i32),
+        Key::Num5 => Some('5' as i32),
+        Key::Num6 => Some('6' as i32),
+        Key::Num7 => Some('7' as i32),
+        Key::Num8 => Some('8' as i32),
+        Key::Num9 => Some('9' as i32),
+        _ => None,
+    }
 }

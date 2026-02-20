@@ -8,6 +8,7 @@ Use this file as a reference for what to keep in repo-local docs:
 
 - `push2type-voice-bridge`
   - Purpose: send spoken updates through `http://127.0.0.1:7821/speak`
+  - Probe health at start of session with `http://127.0.0.1:7821/health`, silently skip spoken updates if server not available.
   - Default usage: send minimal payload (`message` only)
   - Optional overrides: `provider`, `voice`, `style`, `show_text`, `persona`
   - Operating rule: when posting a user text update, also post a concise spoken counterpart

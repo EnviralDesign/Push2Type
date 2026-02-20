@@ -369,12 +369,7 @@ fn is_valid_voice(provider: Provider, voice: &str) -> bool {
         ),
         Provider::Groq => matches!(
             voice,
-            "autumn"
-                | "diana"
-                | "hannah"
-                | "austin"
-                | "daniel"
-                | "troy"
+            "autumn" | "diana" | "hannah" | "austin" | "daniel" | "troy"
         ),
         Provider::Xai => matches!(voice, "ara" | "rex" | "sal" | "eve" | "leo"),
     }

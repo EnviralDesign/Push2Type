@@ -159,6 +159,7 @@ fn parse_hotkey_spec(input: &str) -> Option<HotkeySpec> {
             "win" | "window" | "meta" | "super" => spec.require_meta = true,
             "space" => spec.key = Some(Key::Space),
             "enter" => spec.key = Some(Key::Return),
+            "backtick" | "grave" => spec.key = Some(Key::BackQuote),
             _ if token.len() == 1 => {
                 if let Some(ch) = token.chars().next() {
                     spec.key = map_alpha_numeric(ch.to_ascii_uppercase());
@@ -178,6 +179,7 @@ fn parse_hotkey_spec(input: &str) -> Option<HotkeySpec> {
 
 fn map_alpha_numeric(c: char) -> Option<Key> {
     match c {
+        '`' => Some(Key::BackQuote),
         'A' => Some(Key::KeyA),
         'B' => Some(Key::KeyB),
         'C' => Some(Key::KeyC),

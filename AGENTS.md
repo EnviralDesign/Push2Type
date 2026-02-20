@@ -71,6 +71,7 @@ Constraints:
 - Voice update must be a natural-language counterpart, not a verbatim copy.
 - Keep voice concise and low-jargon to reduce cost and improve clarity.
 - If text update is very long, summarize to 1-2 short spoken sentences.
+- At the start of chat sessions always probe tts server health at `http://127.0.0.1:7821/health`, if not available silently skip voice updates and stop trying, until/unless asked by the user.
 
 ## Few-Shot Pattern
 

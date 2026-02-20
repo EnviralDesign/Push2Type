@@ -42,7 +42,16 @@ fn main() -> anyhow::Result<()> {
         recorder.clone(),
         stt_tx.clone(),
     );
-    server::spawn_server(shared_config.clone(), ui_event_tx.clone(), tts_tx.clone());
+    let (initial_tts_bridge_enabled, initial_server_port) = {
+        let cfg = shared_config.lock().expect("config lock");
+        (cfg.tts_bridge_enabled, cfg.server_port)
+    };
+    let server_control = server::spawn_server_controller(
+        initial_tts_bridge_enabled,
+        initial_server_port,
+        ui_event_tx.clone(),
+        tts_tx.clone(),
+    );
 
     let mut viewport = egui::ViewportBuilder::default()
         .with_inner_size([480.0, 280.0])
@@ -66,6 +75,7 @@ fn main() -> anyhow::Result<()> {
                 tts_tx,
                 stt_tx,
                 recorder,
+                server_control,
             )))
         }),
     )

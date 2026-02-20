@@ -32,6 +32,7 @@ pub struct AppConfig {
     pub stt_model_by_provider: HashMap<String, String>,
     pub xai_tts_style: String,
     pub server_port: u16,
+    pub tts_bridge_enabled: bool,
     pub show_endpoint_text: bool,
     pub persona_voices: HashMap<String, String>,
 }
@@ -60,6 +61,7 @@ impl Default for AppConfig {
             stt_model_by_provider: default_stt_model_by_provider(),
             xai_tts_style: "clear, concise, and technically precise".to_string(),
             server_port: 7821,
+            tts_bridge_enabled: true,
             show_endpoint_text: true,
             persona_voices,
         }

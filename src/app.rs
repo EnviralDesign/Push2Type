@@ -10,6 +10,7 @@ use eframe::egui;
 use crate::{
     audio::AudioRecorder,
     config::{AppConfig, Provider},
+    server::ServerControl,
     tts::{SpeakRequest, TtsRequest},
 };
 
@@ -24,6 +25,7 @@ pub enum AppEvent {
     LastTranscript(String),
     LastSpoken(String),
     ServerOnline(String),
+    ServerOffline,
 }
 
 pub struct Push2TypeApp {
@@ -31,6 +33,7 @@ pub struct Push2TypeApp {
     events: Receiver<AppEvent>,
     tts_tx: Sender<TtsRequest>,
     stt_tx: Sender<Vec<i16>>,
+    server_control: ServerControl,
     recorder: Arc<AudioRecorder>,
     logs: Vec<String>,
     listening: bool,
@@ -43,6 +46,7 @@ pub struct Push2TypeApp {
     message_input: String,
     hotkey_draft: String,
     server_port_draft: u16,
+    tts_bridge_enabled_draft: bool,
     show_endpoint_text_draft: bool,
     stt_language_draft: String,
     stt_model_draft: String,
@@ -63,6 +67,7 @@ impl Push2TypeApp {
         tts_tx: Sender<TtsRequest>,
         stt_tx: Sender<Vec<i16>>,
         recorder: Arc<AudioRecorder>,
+        server_control: ServerControl,
     ) -> Self {
         let cfg = config.lock().expect("config lock").clone();
         let initial_stt_model = cfg.stt_model_for(&cfg.stt_provider);
@@ -79,6 +84,7 @@ impl Push2TypeApp {
             events,
             tts_tx,
             stt_tx,
+            server_control,
             recorder,
             logs: vec!["Push2Type Rust satellite started.".to_string()],
             listening: false,
@@ -86,11 +92,16 @@ impl Push2TypeApp {
             tts_busy: false,
             last_transcript: String::new(),
             last_spoken: String::new(),
-            endpoint: format!("http://127.0.0.1:{}/speak", cfg.server_port),
+            endpoint: if cfg.tts_bridge_enabled {
+                format!("http://127.0.0.1:{}/speak", cfg.server_port)
+            } else {
+                "Disabled".to_string()
+            },
             persona_input: "codex".to_string(),
             message_input: "The quick brown fox jumped over the lazy dog.".to_string(),
             hotkey_draft: cfg.hotkey,
             server_port_draft: cfg.server_port,
+            tts_bridge_enabled_draft: cfg.tts_bridge_enabled,
             show_endpoint_text_draft: cfg.show_endpoint_text,
             stt_language_draft: cfg.stt_language,
             stt_model_draft: initial_stt_model,
@@ -117,6 +128,7 @@ impl Push2TypeApp {
                 AppEvent::LastTranscript(text) => self.last_transcript = text,
                 AppEvent::LastSpoken(text) => self.last_spoken = text,
                 AppEvent::ServerOnline(addr) => self.endpoint = addr,
+                AppEvent::ServerOffline => self.endpoint = "Disabled".to_string(),
             }
         }
         if self.logs.len() > 300 {
@@ -192,7 +204,7 @@ impl eframe::App for Push2TypeApp {
                                         ui.label("Hotkey");
                                         ui.text_edit_singleline(&mut self.hotkey_draft);
                                     });
-                                    ui.label("Hotkey and port changes require app restart.");
+                                    ui.label("Hotkey changes require app restart.");
                                 });
 
                             egui::CollapsingHeader::new("Speech To Text")
@@ -253,6 +265,19 @@ impl eframe::App for Push2TypeApp {
                                 .id_salt("cfg_tts_bridge")
                                 .default_open(false)
                                 .show(ui, |ui| {
+                                    if ui
+                                        .checkbox(
+                                            &mut self.tts_bridge_enabled_draft,
+                                            "Enable internal TTS bridge server",
+                                        )
+                                        .changed()
+                                    {
+                                        self.server_control
+                                            .set_enabled(self.tts_bridge_enabled_draft);
+                                        if !self.tts_bridge_enabled_draft {
+                                            self.endpoint = "Disabled".to_string();
+                                        }
+                                    }
                                     ui.horizontal(|ui| {
                                         let old_tts_provider = self.tts_provider_draft;
                                         ui.label("TTS Provider");
@@ -307,20 +332,25 @@ impl eframe::App for Push2TypeApp {
                                                 .range(1025..=65535),
                                         );
                                     });
-                            ui.checkbox(
-                                &mut self.show_endpoint_text_draft,
-                                "Show endpoint text in UI",
-                            );
-                            ui.horizontal(|ui| {
-                                ui.label("xAI Delivery Style");
-                                ui.add_enabled_ui(self.tts_provider_draft == Provider::Xai, |ui| {
-                                    ui.text_edit_singleline(&mut self.xai_style_draft);
+                                    ui.checkbox(
+                                        &mut self.show_endpoint_text_draft,
+                                        "Show endpoint text in UI",
+                                    );
+                                    ui.horizontal(|ui| {
+                                        ui.label("xAI Delivery Style");
+                                        ui.add_enabled_ui(
+                                            self.tts_provider_draft == Provider::Xai,
+                                            |ui| {
+                                                ui.text_edit_singleline(&mut self.xai_style_draft);
+                                            },
+                                        );
+                                    });
+                                    if self.tts_provider_draft != Provider::Xai {
+                                        ui.small(
+                                            "Only xAI realtime currently supports style prompting.",
+                                        );
+                                    }
                                 });
-                            });
-                            if self.tts_provider_draft != Provider::Xai {
-                                ui.small("Only xAI realtime currently supports style prompting.");
-                            }
-                        });
 
                             if ui.button("Save Configuration").clicked() {
                                 save_main = true;
@@ -405,9 +435,12 @@ impl eframe::App for Push2TypeApp {
         }
 
         if save_main {
+            let runtime_port = self.server_port_draft;
+            let runtime_enabled = self.tts_bridge_enabled_draft;
             let mut cfg = self.config.lock().expect("config lock");
             cfg.hotkey = self.hotkey_draft.clone();
-            cfg.server_port = self.server_port_draft;
+            cfg.server_port = runtime_port;
+            cfg.tts_bridge_enabled = runtime_enabled;
             cfg.show_endpoint_text = self.show_endpoint_text_draft;
             cfg.stt_language = self.stt_language_draft.clone();
             self.stt_model_by_provider_draft.insert(
@@ -443,6 +476,12 @@ impl eframe::App for Push2TypeApp {
                 Ok(_) => ("Saved config.".to_string(), Instant::now()),
                 Err(e) => (format!("Save failed: {e}"), Instant::now()),
             });
+            drop(cfg);
+            self.server_control.set_port(runtime_port);
+            self.server_control.set_enabled(runtime_enabled);
+            if !runtime_enabled {
+                self.endpoint = "Disabled".to_string();
+            }
         }
     }
 }
@@ -462,8 +501,6 @@ fn tts_voices_for_provider(provider: Provider) -> Vec<&'static str> {
             "alloy", "ash", "ballad", "coral", "echo", "fable", "nova", "onyx", "sage", "shimmer",
             "verse", "marin", "cedar",
         ],
-        Provider::Groq => vec![
-            "autumn", "diana", "hannah", "austin", "daniel", "troy",
-        ],
+        Provider::Groq => vec!["autumn", "diana", "hannah", "austin", "daniel", "troy"],
     }
 }

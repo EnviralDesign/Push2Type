@@ -12,7 +12,7 @@ use rdev::Key;
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::{
     GetAsyncKeyState, VK_LCONTROL, VK_LMENU, VK_LSHIFT, VK_LWIN, VK_RETURN, VK_RCONTROL,
-    VK_RMENU, VK_RSHIFT, VK_RWIN, VK_SPACE,
+    VK_RMENU, VK_RSHIFT, VK_RWIN, VK_SPACE, VK_OEM_3,
 };
 
 use crate::{app::AppEvent, audio::AudioRecorder, config::AppConfig};
@@ -319,6 +319,7 @@ fn key_to_vk(key: Key) -> Option<i32> {
     match key {
         Key::Space => Some(VK_SPACE as i32),
         Key::Return => Some(VK_RETURN as i32),
+        Key::BackQuote => Some(VK_OEM_3 as i32),
         Key::KeyA => Some('A' as i32),
         Key::KeyB => Some('B' as i32),
         Key::KeyC => Some('C' as i32),
